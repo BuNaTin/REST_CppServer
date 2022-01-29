@@ -62,7 +62,7 @@ Rest_Server::Rest_Server(QObject *parent) : QTcpServer(parent)
     logger = new DataBaseLog();
     if(listen(QHostAddress::Any, 1234))
     {
-        qDebug() << "listerning...";
+        qDebug() << "listening...";
     }
     else
     {
