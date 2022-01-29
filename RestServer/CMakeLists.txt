@@ -19,12 +19,16 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Network REQUIRED)
 add_executable(RESTserver
   main.cpp
   rest_server.h
+  rest_server.cpp
 
   parser.h
+  parser.cpp
 
   database.h
+  database.cpp
 
   databaselog.h
+  databaselog.cpp
 
   Command.h
   Mode.h
