@@ -81,6 +81,4 @@ def testing_delete():
     command_name = "deleted"
     assert (delete(APIADRESS.format(id_num)).status_code == 200)
     response = TABLE0 + old_table + old_log + LINE.format(id_num,command_name)
-    #print(response)
-    #print(get(TESTADRESS).text)
     assert (get(TESTADRESS).text == response)
