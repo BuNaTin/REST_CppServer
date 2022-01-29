@@ -17,4 +17,4 @@ QString DataBaseLog::getString() {
     }
     return ans;
 }
-//item with id <> has been added, item with id <> has been deleted, item with id <> has been changed
+

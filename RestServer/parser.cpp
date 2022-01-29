@@ -9,12 +9,12 @@ Parser::Parser(QString DataFromSocket)
 {
     headBuffer = DataFromSocket.split('\n')[0];
 }
-
+// парсинг приходящего http запроса
 bool Parser::parseHead(Command& command, Mode& mode, int& id) {
     QStringList first = headBuffer.split(' ');
-    command = CommandfromString(first[0] /* which is command name */ );
+    command = CommandfromString(first[0] /* имя команды */ );
     QStringList second = first[1].split('/');
-    mode = ModeFromString(second[1] /* which is mode name */ );
+    mode = ModeFromString(second[1] /* имя выбранного режима работы */ );
     id = -1; // Error value
     if(command == Command::ERR || mode == Mode::ERR) {
         return false;
@@ -23,7 +23,7 @@ bool Parser::parseHead(Command& command, Mode& mode, int& id) {
     if(mode == Mode::TEST) {
         return true;
     }
-    // if don't have id num
+    // Если нехватает id
     if(second.size() < 3) {
         return false;
     }

@@ -7,6 +7,55 @@
 #include <QDebug>
 #include <QCoreApplication>
 
+namespace {
+    // для формирования форматированного ответа
+    QString BuildResponse(int code, Command command, int id = -1, int value = -1) {
+        //HTTP/1.1 404 Not found\r\n\r\nElement <%1> not found.
+        QString ans = "HTTP/1.1 %1";
+        switch(code) {
+        case 200:
+            ans = ans.arg(200) + " OK";
+            break;
+        case 201:
+            ans = ans.arg(201) + " Created";
+            break;
+        case 204:
+            ans = ans.arg(204) + " No content";
+            break;
+        case 400:
+            ans = ans.arg(400) + " Bad Request";
+            break;
+        case 404:
+            ans = ans.arg(404) + " Not found";
+            break;
+        default:
+            ;
+        }
+        ans+="\r\n";
+        switch(command) {
+        case Command::GET:
+            if(code == 200) {
+                ans += QString("\r\n{\n\t\"message\":\"Item id <%1>, item value <%2>.\"\n}\n").arg(id).arg(value);
+            } else {
+                ans += QString("\r\n{\n\t\"message\":\"Element <%1> not found.\"\n}\n").arg(id);
+            }
+            break;
+        case Command::PUT:
+            break;
+        case Command::POST:
+            ans += QString("\r\n{\n\t\"id\":\"%1\"\n}\n").arg(id);
+            break;
+        case Command::DELETE:
+            break;
+        case Command::ERR:
+            break;
+        default:
+            ;
+        }
+        return ans;
+    }
+} // namespace
+
 Rest_Server::Rest_Server(QObject *parent) : QTcpServer(parent)
 {
     dataBase = new DataBase();
@@ -21,6 +70,7 @@ Rest_Server::Rest_Server(QObject *parent) : QTcpServer(parent)
     }
 }
 
+// настройка сокетов и сигналов
 void Rest_Server::incomingConnection(qintptr handle)
 {
     QTcpSocket *socket = new QTcpSocket();
@@ -35,6 +85,7 @@ void Rest_Server::incomingConnection(qintptr handle)
             SLOT(onDisconnected()));
 }
 
+// обработка входящих запросов
 void Rest_Server::onReadyRead()
 {
     QTcpSocket * socket = qobject_cast<QTcpSocket*>(sender());
@@ -44,67 +95,57 @@ void Rest_Server::onReadyRead()
     int id;
     if(!parser.parseHead(command, mode, id)){
         // if wrong accept
+        QString response = "HTTP/1.1 400 Bad Request\r\n";
+        socket->write(response.arg(id).toUtf8());
         socket->disconnectFromHost();
         return;
     }
-    //response = "HTTP/1.1 200 OK\r\n\r\nItem id <%1>, item value <%2>.";
-    QString response = "";
 
     if(mode == Mode::API) {
         if(command == Command::GET) {
             int value = dataBase->Get(id);
             // If could't find
             if(value == -1) {
-                response = "HTTP/1.1 404 WRONG\r\n\r\nDon't have item with id <%1>.";
-                socket->write(response.arg(id).toUtf8());
+                socket->write(BuildResponse(404, command, id).toUtf8());
             } else {
-                response = "HTTP/1.1 200 OK\r\n\r\nItem id <%1>, item value <%2>.";
-                socket->write(response.arg(id).arg(value).toUtf8());
+                socket->write(BuildResponse(200, command, id, value).toUtf8());
             }
         } else
         if(command == Command::POST) {
-            if(dataBase->Add(id)) {
-                logger->addNote(id,"added");
-            } else {
-                dataBase->Modify(id);
+            if(dataBase->Modify(id)) {
                 logger->addNote(id,"changed");
+            } else {
+                logger->addNote(id,"added");
             }
-            response = "HTTP/1.1 200 OK\r\n\r\nId:%1";
-            socket->write(response.arg(id).toUtf8());
+            socket->write(BuildResponse(200, command, id).toUtf8());
         } else
         if(command == Command::PUT) {
-            if(!dataBase->Add(id)) {
-                response = "HTTP/1.1 204 No Content\r\n";
-            } else {
-                response = "HTTP/1.1 201 Created\r\n";
-                logger->addNote(id,"added");
-            }
-            socket->write(response.toUtf8());
+            dataBase->Add(id);
+            logger->addNote(id,"added");
+            socket->write(BuildResponse(201, command, id).toUtf8());
         } else
         if(command == Command::DELETE) {
             if(!dataBase->Delete(id)) {
-                response = "HTTP/1.1 204 No Content\r\n";
+                socket->write(BuildResponse(204, command).toUtf8());
             } else {
-                response = "HTTP/1.1 200 OK\r\n";
+                socket->write(BuildResponse(200, command).toUtf8());
                 logger->addNote(id,"deleted");
             }
-            socket->write(response.toUtf8());
         } else {
-            response = "HTTP/1.1 404 Not found\r\n";
-            socket->write(response.toUtf8());
+            socket->write(BuildResponse(400, command).toUtf8());
         }
     } else
     if(mode == Mode::TEST) {
         if(command == Command::GET) {
-            response = "HTTP/1.1 200 OK\r\n\r\n";
-            // вывод таблицы
+            QString response = "HTTP/1.1 200 Ok\r\n\r\n";
+            // добавление таблицы
             response += dataBase->getString();
-            // вывод логов
+            // добавление логов
             response += logger->getString();
+            socket->write(response.toUtf8());
         } else {
-            response = "HTTP/1.1 404 Not found\r\n";
+            socket->write(BuildResponse(400, Command::ERR).toUtf8());
         }
-        socket->write(response.toUtf8());
     }
 
     socket->disconnectFromHost();

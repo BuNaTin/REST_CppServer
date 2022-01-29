@@ -14,7 +14,7 @@ public:
     DataBase();
     int Get(int id); // Err code = -1
     bool Add(int id);
-    bool Modify(int id);
+    bool Modify(int id); // true - если объект изменён, false - если объект создан
     bool Delete(int id);
     QString getString();
 private:

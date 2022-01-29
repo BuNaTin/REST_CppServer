@@ -7,7 +7,7 @@ DataBase::DataBase()
 
 int DataBase::Get(int id) {
     auto iter = data.find(id);
-    // couldn't find
+    // Не может найти
     if(iter == data.end()) {
         return -1;
     } else {
@@ -16,19 +16,17 @@ int DataBase::Get(int id) {
 }
 
 bool DataBase::Add(int id) {
-    if(data.contains(id)) {
-        return false;
-    } else {
-        data.insert(id,0);
-        return true;
-    }
+    data.insert(id,0);
+    return true;
 }
 
+// true - если объект изменён, false - если объект создан
 bool DataBase::Modify(int id) {
     if(data.contains(id)) {
         data[id]++;
         return true;
     } else {
+        data.insert(id,0);
         return false;
     }
 }
