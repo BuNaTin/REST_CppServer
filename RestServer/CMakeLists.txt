@@ -18,7 +18,16 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Network REQUIRED)
 
 add_executable(RESTserver
   main.cpp
+  rest_server.h
 
+  parser.h
+
+  database.h
+
+  databaselog.h
+
+  Command.h
+  Mode.h
 )
 target_link_libraries(RESTserver Qt${QT_VERSION_MAJOR}::Core)
 target_link_libraries(RESTserver Qt${QT_VERSION_MAJOR}::Network)
